@@ -41,6 +41,7 @@ enum
     OPT_LISTFILE,
     OPT_APPLYLIST,
     OPT_ADDFILE,
+    OPT_RMFILE,
     OPT_PATCHPREFIX,
     OPT_PATCHES,
     OPT_SEARCH,
@@ -69,8 +70,9 @@ const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
     { OPT_DEST,             "--dest",           SO_REQ_SEP },
     { OPT_FULLPATH,         "-f",               SO_NONE    },
     { OPT_FULLPATH,         "--fullpath",       SO_NONE    },
-    // { OPT_ADDFILE,          "-a",               SO_REQ_SEP },
     { OPT_ADDFILE,          "--addfile",        SO_REQ_SEP },
+    { OPT_RMFILE,           "--rm",             SO_REQ_SEP },
+    { OPT_RMFILE,           "-r",               SO_REQ_SEP },
     { OPT_LOWERCASE,        "-c",               SO_NONE    },
     { OPT_LOWERCASE,        "--lowercase",      SO_NONE    },
     
@@ -152,6 +154,7 @@ int main(int argc, char** argv)
     HANDLE hArchive;
     string strApplyListFile;
     string strAddFile;
+    string strRmFile;
     string strListFile;
     string strPatchPrefix;
     vector<string> patches;
@@ -180,6 +183,9 @@ int main(int argc, char** argv)
                     break;
                 case OPT_ADDFILE:
                     strAddFile = args.OptionArg();
+                    break;
+                case OPT_RMFILE:
+                    strRmFile = args.OptionArg();
                     break;
                 
                 case OPT_LISTFILE:
@@ -270,6 +276,14 @@ int main(int argc, char** argv)
 
         if (!SFileAddFileEx(hArchive, file.c_str(), path.c_str(), MPQ_FILE_REPLACEEXISTING, 0, 0)) {
             cerr << "Failed to add file to archive" << endl;
+            SFileCloseArchive(hArchive);
+            return -1;
+        }
+    }
+
+    if (!strRmFile.empty()) {
+        if (!SFileRemoveFile(hArchive, strRmFile.c_str(), 0)) {
+            cerr << "Failed to remove file from archive" << endl;
             SFileCloseArchive(hArchive);
             return -1;
         }
