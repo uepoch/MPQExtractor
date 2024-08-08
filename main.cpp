@@ -26,6 +26,11 @@ struct tSearchResult
     string strFullPath;
 };
 
+/* WAIT HERE */
+/* THIS VERSION OF MPQEXTRACTOR IS JUST ME NOT WILLING TO SPEND TIME ON THIS */
+/* THIS IS NOT ENDORSED BY THE ORIGINAL AUTHOR */
+/* GO GIVE THEM HUGS AT https://github.com/Kanma */
+
 
 /**************************** COMMAND-LINE PARSING ****************************/
 
@@ -35,6 +40,7 @@ enum
     OPT_HELP,
     OPT_LISTFILE,
     OPT_APPLYLIST,
+    OPT_ADDFILE,
     OPT_PATCHPREFIX,
     OPT_PATCHES,
     OPT_SEARCH,
@@ -63,6 +69,8 @@ const CSimpleOpt::SOption COMMAND_LINE_OPTIONS[] = {
     { OPT_DEST,             "--dest",           SO_REQ_SEP },
     { OPT_FULLPATH,         "-f",               SO_NONE    },
     { OPT_FULLPATH,         "--fullpath",       SO_NONE    },
+    // { OPT_ADDFILE,          "-a",               SO_REQ_SEP },
+    { OPT_ADDFILE,          "--addfile",        SO_REQ_SEP },
     { OPT_LOWERCASE,        "-c",               SO_NONE    },
     { OPT_LOWERCASE,        "--lowercase",      SO_NONE    },
     
@@ -89,6 +97,7 @@ void showUsage(const std::string& strApplicationName)
          << "    --applylist <FILE>" << endl
          << "    -a <FILE>                Apply list file FILE to the archive" << endl
          << "    --listfile <FILE>," << endl
+         << "    --addfile <FILE>=<PATH>  Add file FILE to the archive at PATH" << endl
          << "    -l <FILE>:               Retrieve the list of files in the archive and save it" << endl
          << "                             in FILE" << endl
          << "    --search <PATTERN>," << endl
@@ -142,6 +151,7 @@ int main(int argc, char** argv)
 {
     HANDLE hArchive;
     string strApplyListFile;
+    string strAddFile;
     string strListFile;
     string strPatchPrefix;
     vector<string> patches;
@@ -167,6 +177,9 @@ int main(int argc, char** argv)
                 
                 case OPT_APPLYLIST:
                     strApplyListFile = args.OptionArg();
+                    break;
+                case OPT_ADDFILE:
+                    strAddFile = args.OptionArg();
                     break;
                 
                 case OPT_LISTFILE:
@@ -228,7 +241,7 @@ int main(int argc, char** argv)
 
     
     cout << "Opening '" << args.File(0) << "'..." << endl;
-    if (!SFileOpenArchive(args.File(0), 0, MPQ_OPEN_READ_ONLY, &hArchive))
+    if (!SFileOpenArchive(args.File(0), 0, 0, &hArchive))
     {
         cerr << "Failed to open the file '" << args.File(0) << "'" << endl;
         return -1;
@@ -239,6 +252,24 @@ int main(int argc, char** argv)
         if((SFileAddListFile(hArchive, strApplyListFile.c_str()))!= ERROR_SUCCESS)
         {
             cerr << "Failed to apply list file to archive" << endl;
+            SFileCloseArchive(hArchive);
+            return -1;
+        }
+    }
+
+    if (!strAddFile.empty()) {
+        // split the string into two parts
+        size_t pos = strAddFile.find('=');
+        if (pos == string::npos) {
+            cerr << "Invalid addfile argument" << endl;
+            SFileCloseArchive(hArchive);
+            return -1;
+        }
+        string file = strAddFile.substr(0, pos);
+        string path = strAddFile.substr(pos + 1);
+
+        if (!SFileAddFileEx(hArchive, file.c_str(), path.c_str(), MPQ_FILE_REPLACEEXISTING, 0, 0)) {
+            cerr << "Failed to add file to archive" << endl;
             SFileCloseArchive(hArchive);
             return -1;
         }
