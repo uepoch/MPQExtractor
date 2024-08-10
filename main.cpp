@@ -164,6 +164,7 @@ int main(int argc, char** argv)
     bool bExtraction = false;
     bool bUseFullPath = false;
     bool bLowerCase = false;
+    int nError = ERROR_SUCCESS; // Result
 
 
     // Parse the command-line parameters
@@ -275,7 +276,8 @@ int main(int argc, char** argv)
         string path = strAddFile.substr(pos + 1);
 
         if (!SFileAddFileEx(hArchive, file.c_str(), path.c_str(), MPQ_FILE_REPLACEEXISTING, 0, 0)) {
-            cerr << "Failed to add file to archive" << endl;
+            nError = GetLastError();
+            cerr << "Failed to add file to archive: " << nError << endl;
             SFileCloseArchive(hArchive);
             return -1;
         }
@@ -283,7 +285,8 @@ int main(int argc, char** argv)
 
     if (!strRmFile.empty()) {
         if (!SFileRemoveFile(hArchive, strRmFile.c_str(), 0)) {
-            cerr << "Failed to remove file from archive" << endl;
+            nError = GetLastError();
+            cerr << "Failed to remove file from archive: " << nError << endl;
             SFileCloseArchive(hArchive);
             return -1;
         }
